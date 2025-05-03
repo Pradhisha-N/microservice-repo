@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: microservice-deployment
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: microservice
@@ -13,7 +13,7 @@ spec:
         app: microservice
     spec:
       containers:
-      - name: microservice
-        image: pradhisha/microservice-image:latest  
-        ports:
-        - containerPort: 8080
+        - name: microservice
+          image: pradhisha/microservice-image:8
+          ports:
+            - containerPort: 8080
