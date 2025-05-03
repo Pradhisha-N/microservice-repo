@@ -2,97 +2,58 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE_NAME = 'microservice-image'
-        DOCKER_REGISTRY = 'pradhisha'
-        SONARQUBE = 'SonarQube'
+        IMAGE_NAME = 'pradhisha/microservice-image'
+        IMAGE_TAG = 'latest'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the repository
                 git branch: 'main', url: 'https://github.com/Pradhisha-N/microservice-repo.git'
             }
         }
 
-        stage('Build and Test') {
-            when {
-                branch 'Feature/*'
-                branch 'Develop'
-            }
+        stage('Build JAR') {
             steps {
-                script {
-                    // Run Maven build and tests
-                    sh 'mvn clean install'
-                }
+                sh 'mvn clean install'
             }
         }
 
-        stage('SonarQube Analysis') {
-            when {
-                branch 'Feature/*'
-                branch 'Develop'
-            }
+        stage('Verify JAR') {
             steps {
-                script {
-                    // Perform SonarQube analysis
-                    withSonarQubeEnv(SONARQUBE) {
-                        sh 'mvn sonar:sonar -Dsonar.projectKey=microservice'
-                    }
-                }
+                sh 'ls -lh target'
+                sh 'test -f target/microservice-0.0.1-SNAPSHOT.jar'
             }
         }
 
         stage('Docker Build') {
-            when {
-                branch 'Develop'
-            }
             steps {
-                script {
-                    // Build Docker image from Dockerfile
-                    sh '''
-                    docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${BUILD_NUMBER} .
-                    '''
-                }
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
             }
         }
 
-        stage('Push to Docker Registry') {
-            when {
-                branch 'Develop'
-            }
+        stage('Push Docker Image') {
             steps {
-                script {
-                    // Push Docker image to registry
-                    sh '''
-                    docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${BUILD_NUMBER}
-                    '''
+                withDockerRegistry(credentialsId: 'dockerhub', url: '') {
+                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
                 }
             }
         }
 
         stage('Deploy to Kubernetes') {
-            when {
-                branch 'Develop'
-            }
             steps {
-                script {
-                    // Apply Kubernetes manifests to deploy
-                    sh '''
-                    kubectl apply -f k8s/deployment.yaml
-                    kubectl apply -f k8s/service.yaml
-                    '''
-                }
+                sh 'kubectl apply -f k8s/deployment.yaml'
+                sh 'kubectl apply -f k8s/service.yaml'
             }
         }
     }
 
     post {
-        success {
-            echo "Pipeline completed successfully!"
-        }
         failure {
-            echo "Pipeline failed!"
+            echo 'Pipeline failed!'
+        }
+        success {
+            echo 'Pipeline completed successfully.'
         }
     }
 }
