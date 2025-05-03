@@ -11,6 +11,8 @@ pipeline {
         stage('Build JAR') {
             steps {
                 sh 'mvn clean install'
+                sh 'ls target'
+
             }
         }
 
