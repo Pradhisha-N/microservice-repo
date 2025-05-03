@@ -26,6 +26,8 @@ pipeline {
                 script {
                     // Run Maven build and tests
                     sh 'mvn clean install'
+                    echo "Checking target directory contents:"
+                    ls -lah target/
                 }
             }
         }
