@@ -17,20 +17,18 @@ pipeline {
             }
         }
 
-        stage('Build and Test') {
-            when {
-                branch 'Feature/*'
-                branch 'Develop'
-            }
-            steps {
-                script {
-                    // Run Maven build and tests
-                    sh 'mvn clean install'
-                    echo "Checking target directory contents:"
-                    ls -lah target/
-                }
+    stage('Build and Test') {
+        steps {
+            script {
+                sh '''
+                mvn clean install
+                echo "Listing contents of target directory:"
+                ls -lah target
+                '''
             }
         }
+    }
+
 
         stage('SonarQube Analysis') {
             when {
