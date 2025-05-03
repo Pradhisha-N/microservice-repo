@@ -12,7 +12,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the correct branch
                 git branch: "${BRANCH_NAME}", url: "${GIT_REPO_URL}"
             }
         }
@@ -20,16 +19,22 @@ pipeline {
         stage('Build and Test') {
             steps {
                 sh '''
-                mvn clean install
-                echo "Listing contents of target directory:"
-                ls -lah target
+                    echo "Running Maven build..."
+                    mvn clean install
+                    echo "Listing contents of target directory:"
+                    ls -lah target
                 '''
             }
         }
 
         stage('Check JAR') {
             steps {
-                sh 'test -f target/microservice-0.0.1-SNAPSHOT.jar && echo "JAR exists" || (echo "JAR missing!" && exit 1)'
+                sh '''
+                    if [ ! -f target/microservice-0.0.1-SNAPSHOT.jar ]; then
+                      echo "ERROR: JAR file not found!"
+                      exit 1
+                    fi
+                '''
             }
         }
 
@@ -59,8 +64,8 @@ pipeline {
             }
             steps {
                 sh '''
-                echo "Building Docker image..."
-                docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${BUILD_NUMBER} .
+                    echo "Building Docker image..."
+                    docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${BUILD_NUMBER} .
                 '''
             }
         }
@@ -83,8 +88,8 @@ pipeline {
             }
             steps {
                 sh '''
-                kubectl apply -f k8s/deployment.yaml
-                kubectl apply -f k8s/service.yaml
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/service.yaml
                 '''
             }
         }
