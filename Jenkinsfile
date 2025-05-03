@@ -16,10 +16,7 @@ pipeline {
         }
 
         stage('Build and Test') {
-            when {
-                branch 'Feature/*'
-                branch 'Develop'
-            }
+            
             steps {
                 script {
                     // Run Maven build and tests
@@ -29,10 +26,7 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            when {
-                branch 'Feature/*'
-                branch 'Develop'
-            }
+            
             steps {
                 script {
                     // Perform SonarQube analysis
@@ -44,9 +38,7 @@ pipeline {
         }
 
         stage('Docker Build') {
-            when {
-                branch 'Develop'
-            }
+            
             steps {
                 script {
                     // Build Docker image from Dockerfile
@@ -58,9 +50,7 @@ pipeline {
         }
 
         stage('Push to Docker Registry') {
-            when {
-                branch 'Develop'
-            }
+            
             steps {
                 script {
                     // Push Docker image to registry
@@ -72,9 +62,7 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes') {
-            when {
-                branch 'Develop'
-            }
+            
             steps {
                 script {
                     // Apply Kubernetes manifests to deploy
