@@ -12,7 +12,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: "${GITHUB_CREDENTIALS_ID}", url: "${GIT_REPO_URL}"
+                // Checkout the code from the correct branch
+                git branch: "${BRANCH_NAME}", url: "${GIT_REPO_URL}"
             }
         }
 
@@ -26,11 +27,18 @@ pipeline {
             }
         }
 
+        stage('Check JAR') {
+            steps {
+                sh 'test -f target/microservice-0.0.1-SNAPSHOT.jar && echo "JAR exists" || (echo "JAR missing!" && exit 1)'
+            }
+        }
+
         stage('SonarQube Analysis') {
             when {
                 anyOf {
                     branch pattern: "Feature/.*", comparator: "REGEXP"
-                    branch 'develop'
+                    branch 'Develop'
+                    branch 'Main'
                 }
             }
             steps {
@@ -44,16 +52,25 @@ pipeline {
 
         stage('Docker Build') {
             when {
-                branch 'develop'
+                anyOf {
+                    branch 'Develop'
+                    branch 'Main'
+                }
             }
             steps {
-                sh 'docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${BUILD_NUMBER} .'
+                sh '''
+                echo "Building Docker image..."
+                docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${BUILD_NUMBER} .
+                '''
             }
         }
 
         stage('Push to Docker Registry') {
             when {
-                branch 'develop'
+                anyOf {
+                    branch 'Develop'
+                    branch 'Main'
+                }
             }
             steps {
                 sh 'docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${BUILD_NUMBER}'
@@ -62,11 +79,13 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             when {
-                branch 'develop'
+                branch 'Develop'
             }
             steps {
-                sh 'kubectl apply -f k8s/deployment.yaml'
-                sh 'kubectl apply -f k8s/service.yaml'
+                sh '''
+                kubectl apply -f k8s/deployment.yaml
+                kubectl apply -f k8s/service.yaml
+                '''
             }
         }
     }
