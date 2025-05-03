@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_CREDENTIALS_ID = 'Pradhisha-N'  // Your GitHub credentials ID
-        GIT_REPO_URL = 'https://github.com/Pradhisha-N/microservice-repo.git'  // Your repository URL
-        DOCKER_IMAGE_NAME = 'microservice'
+        GITHUB_CREDENTIALS_ID = 'Pradhisha-N'
+        GIT_REPO_URL = 'https://github.com/Pradhisha-N/microservice-repo.git'
+        DOCKER_IMAGE_NAME = 'microservice-image'
         DOCKER_REGISTRY = 'pradhisha'
         SONARQUBE = 'SonarQube'
     }
@@ -12,14 +12,12 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from GitHub using the configured credentials
                 git branch: "${GITHUB_CREDENTIALS_ID}", url: "${GIT_REPO_URL}"
             }
         }
 
-    stage('Build and Test') {
-        steps {
-            script {
+        stage('Build and Test') {
+            steps {
                 sh '''
                 mvn clean install
                 echo "Listing contents of target directory:"
@@ -27,17 +25,16 @@ pipeline {
                 '''
             }
         }
-    }
-
 
         stage('SonarQube Analysis') {
             when {
-                branch 'Feature/*'
-                branch 'Develop'
+                anyOf {
+                    branch pattern: "Feature/.*", comparator: "REGEXP"
+                    branch 'develop'
+                }
             }
             steps {
                 script {
-                    // Perform SonarQube analysis
                     withSonarQubeEnv(SONARQUBE) {
                         sh 'mvn sonar:sonar -Dsonar.projectKey=microservice'
                     }
@@ -47,42 +44,29 @@ pipeline {
 
         stage('Docker Build') {
             when {
-                branch 'Develop'
+                branch 'develop'
             }
             steps {
-                script {
-                    // Build Docker image from Dockerfile
-                    echo "Workspace contents:"
-                    ls -lah
-                    echo "Target contents:"
-                    ls -lah target || true
-                    sh 'docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${BUILD_NUMBER} .'
-                }
+                sh 'docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${BUILD_NUMBER} .'
             }
         }
 
         stage('Push to Docker Registry') {
             when {
-                branch 'Develop'
+                branch 'develop'
             }
             steps {
-                script {
-                    // Push Docker image to registry
-                    sh 'docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${BUILD_NUMBER}'
-                }
+                sh 'docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${BUILD_NUMBER}'
             }
         }
 
         stage('Deploy to Kubernetes') {
             when {
-                branch 'Develop'
+                branch 'develop'
             }
             steps {
-                script {
-                    // Apply Kubernetes manifests to deploy
-                    sh 'kubectl apply -f k8s/deployment.yaml'
-                    sh 'kubectl apply -f k8s/service.yaml'
-                }
+                sh 'kubectl apply -f k8s/deployment.yaml'
+                sh 'kubectl apply -f k8s/service.yaml'
             }
         }
     }
