@@ -52,6 +52,10 @@ pipeline {
             steps {
                 script {
                     // Build Docker image from Dockerfile
+                    echo "Workspace contents:"
+                    ls -lah
+                    echo "Target contents:"
+                    ls -lah target || true
                     sh 'docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${BUILD_NUMBER} .'
                 }
             }
