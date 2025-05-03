@@ -2,7 +2,7 @@
 FROM openjdk:11-jre-slim
 
 # Copy the JAR file into the container
-COPY target/microservice-1.0-SNAPSHOT.jar /app.jar
+COPY target/microservice.jar /app.jar
 
 # Expose port 8080 for the application
 EXPOSE 8080
