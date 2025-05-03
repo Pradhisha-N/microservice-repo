@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = 'pradhisha/microservice-image'
+        IMAGE_TAG = 'latest'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -11,8 +16,6 @@ pipeline {
         stage('Build JAR') {
             steps {
                 sh 'mvn clean install'
-                sh 'ls target'
-
             }
         }
 
@@ -25,14 +28,14 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t pradhisha/microservice-image:latest .'
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
             }
         }
 
         stage('Push Docker Image') {
             steps {
                 withDockerRegistry(credentialsId: 'dockerhub', url: '') {
-                    sh 'docker push pradhisha/microservice-image:latest'
+                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
                 }
             }
         }
@@ -42,6 +45,15 @@ pipeline {
                 sh 'kubectl apply -f k8s/deployment.yaml'
                 sh 'kubectl apply -f k8s/service.yaml'
             }
+        }
+    }
+
+    post {
+        failure {
+            echo 'Pipeline failed!'
+        }
+        success {
+            echo 'Pipeline completed successfully.'
         }
     }
 }
